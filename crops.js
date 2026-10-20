@@ -1,8 +1,10 @@
 /**
  * AgriVerity Agronomic Crop Rules Database
+ * Collaborators: Add or modify crop objects below.
  * Derived from UN FAO Irrigation & Drainage Paper No. 56 & USDA Cover Crop Guidelines
  */
-const CROPS_DATABASE = [
+
+window.CROPS_DATABASE = [
   {
     id: "rice_lowland",
     name: "Lowland Rice (Oryza sativa)",
@@ -117,7 +119,7 @@ const CROPS_DATABASE = [
   }
 ];
 
-const REGIONAL_PRESETS = {
+window.REGIONAL_PRESETS = {
   central_luzon: {
     label: "Central Luzon, PH (Rice Bowl)",
     lat: 15.48,
@@ -143,5 +145,12 @@ const REGIONAL_PRESETS = {
   ilocos_arid: {
     label: "Ilocos Norte, PH (Dry Coastal)",
     lat: 18.19,
-    lon: 
-    
+    lon: 120.59,
+    habitualCropId: "tomato_Determinate",
+    fallback: {
+      rainData: [4.2, 2.5, 6.1, 18.4, 145.0, 260.2, 380.5, 420.1, 290.2, 85.6, 22.2, 8.4],
+      tempData: [30.1, 31.2, 33.4, 35.8, 36.2, 34.5, 32.8, 32.1, 32.4, 33.0, 31.8, 30.5],
+      rootMoistureData: [0.22, 0.18, 0.14, 0.12, 0.30, 0.50, 0.65, 0.70, 0.58, 0.38, 0.28, 0.24]
+    }
+  }
+};
