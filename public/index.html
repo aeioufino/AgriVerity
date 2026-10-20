@@ -358,4 +358,99 @@
       const bestCash = cashCandidates[0].crop;
 
       // Select Phase 2 Restorative Crop (Enforce botanical family break)
-      const coverCandidates = CROPS_DATABASE.filter(c => c.type === "restorative" && c.family !== bes
+      const coverCandidates = CROPS_DATABASE.filter(c => c.type === "restorative" && c.family !== bestCash.family).map(crop => {
+        let score = 100 + crop.nitrogen_fixed_kg_ha * 0.5;
+        if (avgMoist < crop.min_root_moisture) score -= (crop.min_root_moisture - avgMoist) * 120;
+        if (peakTemp > crop.temp_max_c) score -= (peakTemp - crop.temp_max_c) * 15;
+        return { crop, score };
+      }).sort((a, b) => b.score - a.score);
+
+      const bestCover = coverCandidates[0].crop;
+
+      // Render Phase 1 & Phase 2 Cards
+      document.getElementById("cashName").textContent = bestCash.name;
+      document.getElementById("cashFamily").textContent = `Family: ${bestCash.family} | Window: ${bestCash.sowing_window}`;
+      document.getElementById("cashBenefit").textContent = bestCash.benefit;
+      document.getElementById("cashWater").textContent = `${bestCash.water_need_mm_season} mm`;
+
+      const waterDelta = habitualCrop.water_need_mm_season - bestCash.water_need_mm_season;
+      document.getElementById("cashSaved").textContent = waterDelta > 0
+        ? `-${waterDelta} mm (-${Math.round((waterDelta / habitualCrop.water_need_mm_season) * 100)}% water)`
+        : "Standard Baseline";
+
+      document.getElementById("coverName").textContent = bestCover.name;
+      document.getElementById("coverFamily").textContent = `Family: ${bestCover.family} (Breaks ${bestCash.family} pests)`;
+      document.getElementById("coverBenefit").textContent = bestCover.benefit;
+      document.getElementById("coverNitrogen").textContent = `+${bestCover.nitrogen_fixed_kg_ha} kg N/ha`;
+      document.getElementById("coverSowing").textContent = bestCover.sowing_window;
+
+      // Update Chart
+      updateChart(climate.rainData, bestCash.monthly_water_threshold_mm, bestCash.name);
+
+      // Update SMS Output
+      const smsText = `[AgriVerity NASA Advisory]\nLoc: ${lat.toFixed(2)}N, ${lon.toFixed(2)}E (${windowType.toUpperCase()})\nRain: ${windowRain}mm | RootMoist: ${(avgMoist * 100).toFixed(0)}% | MaxTemp: ${peakTemp}C\nRisk: Avoid monocrop ${habitualCrop.name.split(" (")[0]} if dry.\nPhase 1 Cash: ${bestCash.name.split(" (")[0]} (${bestCash.water_need_mm_season}mm)\nPhase 2 Cover: ${bestCover.name.split(" (")[0]} (+${bestCover.nitrogen_fixed_kg_ha}kg N/ha)`;
+      document.getElementById("smsOutput").textContent = smsText;
+    }
+
+    function initChart() {
+      const ctx = document.getElementById("climateChart").getContext("2d");
+      chartInstance = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: MONTH_LABELS,
+          datasets: [
+            {
+              label: "NASA Monthly Rainfall (mm)",
+              data: new Array(12).fill(0),
+              borderColor: "#059669",
+              backgroundColor: "rgba(5, 150, 105, 0.15)",
+              borderWidth: 2.5,
+              fill: true,
+              tension: 0.35,
+              pointRadius: 4,
+              pointBackgroundColor: "#059669"
+            },
+            {
+              label: "Recommended Crop Monthly Water Threshold (mm)",
+              data: new Array(12).fill(70),
+              borderColor: "#e11d48",
+              borderWidth: 2,
+              borderDash: [6, 6],
+              pointRadius: 0,
+              fill: false
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: "index", intersect: false },
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: { display: true, text: "Precipitation (mm / month)" }
+            },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+    }
+
+    function updateChart(rainArray, thresholdMm, cropName) {
+      if (!chartInstance) return;
+      chartInstance.data.datasets[0].data = rainArray;
+      chartInstance.data.datasets[1].data = new Array(12).fill(thresholdMm);
+      chartInstance.data.datasets[1].label = `${cropName.split(" (")[0]} Min Monthly Need (${thresholdMm} mm)`;
+      chartInstance.update();
+    }
+
+    function copySmsAdvisory() {
+      const text = document.getElementById("smsOutput").textContent;
+      navigator.clipboard.writeText(text);
+      const btn = document.getElementById("btnCopySms");
+      btn.textContent = "✓ Copied!";
+      setTimeout(() => { btn.textContent = "Copy Text"; }, 2000);
+    }
+  </script>
+</body>
+</html>
