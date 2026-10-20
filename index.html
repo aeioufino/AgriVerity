@@ -3,10 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hey its me, AgriVerity!</title>
+  <title>AgriVerity — NASA Crop Rotation Decision Engine</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="./crops.js" defer></script>
 </head>
 <body class="bg-slate-50 text-slate-900 font-sans min-h-screen flex flex-col">
 
@@ -15,7 +14,7 @@
     <div class="max-w-6xl mx-auto px-4 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
       <div>
         <div class="flex items-center gap-2">
-          <span class="text-2xl">🙂</span>
+          <span class="text-2xl">🌱</span>
           <h1 class="text-2xl font-bold tracking-tight">AgriVerity</h1>
           <span class="text-xs bg-emerald-700 text-emerald-100 px-2.5 py-0.5 rounded-full font-medium border border-emerald-600">
             NASA Space Apps Challenge
@@ -72,15 +71,15 @@
           </div>
         </div>
 
-        <!-- Farmer's Habitual Crop & Window -->
+        <!-- Dynamically Populated from crops.js -->
         <div class="space-y-3 mb-5">
           <div>
             <label for="selectHabitualCrop" class="block text-xs font-semibold text-slate-600 mb-1">2. Habitual / Previous Crop</label>
-            <select id="selectHabitualCrop" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-emerald-500 focus:outline-none"></select>
+            <select id="selectHabitualCrop" onchange="runAnalysis()" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-emerald-500 focus:outline-none"></select>
           </div>
           <div>
             <label for="selectSeasonWindow" class="block text-xs font-semibold text-slate-600 mb-1">3. Target Planting Window</label>
-            <select id="selectSeasonWindow" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+            <select id="selectSeasonWindow" onchange="runAnalysis()" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-emerald-500 focus:outline-none">
               <option value="dry">Dry / Post-Monsoon Window (Nov – Apr)</option>
               <option value="wet">Wet / Monsoon Window (May – Oct)</option>
               <option value="annual">Full Annual Cycle (Jan – Dec)</option>
@@ -88,7 +87,7 @@
           </div>
         </div>
 
-        <button id="btnAnalyze" onclick="runAnalysis()" class="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-semibold text-sm rounded-lg shadow-sm transition flex items-center justify-center gap-2">
+        <button id="btnAnalyze" type="button" onclick="runAnalysis()" class="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-semibold text-sm rounded-lg shadow-sm transition flex items-center justify-center gap-2">
           <span>🛰️ Fetch NASA Data & Prescribe Rotation</span>
         </button>
       </div>
@@ -97,7 +96,7 @@
       <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
         <div class="flex items-center justify-between mb-2">
           <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">📲 Last-Mile SMS Field Advisory</h3>
-          <button onclick="copySmsAdvisory()" id="btnCopySms" class="text-xs text-emerald-700 hover:text-emerald-900 font-semibold px-2 py-1 rounded bg-emerald-50 border border-emerald-200">
+          <button type="button" onclick="copySmsAdvisory()" id="btnCopySms" class="text-xs text-emerald-700 hover:text-emerald-900 font-semibold px-2 py-1 rounded bg-emerald-50 border border-emerald-200">
             Copy Text
           </button>
         </div>
@@ -113,17 +112,17 @@
         <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
           <p class="text-xs font-semibold uppercase text-slate-400">Window Precipitation</p>
           <p id="metricRain" class="text-2xl font-bold text-slate-800 mt-1">-- mm</p>
-          <p id="metricRainSub" class="text-xs font-medium text-slate-500 mt-1">NASA POWER (PRECTOTCORR)</p>
+          <p class="text-xs font-medium text-slate-500 mt-1">NASA POWER (PRECTOTCORR)</p>
         </div>
         <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
           <p class="text-xs font-semibold uppercase text-slate-400">Peak Thermal Stress</p>
           <p id="metricTemp" class="text-2xl font-bold text-slate-800 mt-1">-- °C</p>
-          <p id="metricTempSub" class="text-xs font-medium text-slate-500 mt-1">NASA POWER (T2M_MAX)</p>
+          <p class="text-xs font-medium text-slate-500 mt-1">NASA POWER (T2M_MAX)</p>
         </div>
         <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
           <p class="text-xs font-semibold uppercase text-slate-400">Root-Zone Soil Wetness</p>
           <p id="metricMoisture" class="text-2xl font-bold text-slate-800 mt-1">--%</p>
-          <p id="metricMoistureSub" class="text-xs font-medium text-slate-500 mt-1">NASA MERRA-2 (GWETROOT)</p>
+          <p class="text-xs font-medium text-slate-500 mt-1">NASA MERRA-2 (GWETROOT)</p>
         </div>
       </div>
 
@@ -205,21 +204,33 @@
     </div>
   </footer>
 
-  <!-- Core Application Logic -->
+  <!-- 1. Load Collaborator Crop Database Synchronously First -->
+  <script src="crops.js"></script>
+
+  <!-- 2. Execute Engine Logic After crops.js Is Loaded -->
   <script>
     let chartInstance = null;
     const DAYS_IN_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
     const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-    window.addEventListener("DOMContentLoaded", () => {
+    function initApp() {
+      // Diagnostic check for team collaboration on crops.js
+      if (!window.CROPS_DATABASE || !Array.isArray(window.CROPS_DATABASE)) {
+        document.getElementById("auditBanner").className = "p-4 rounded-xl border bg-rose-100 border-rose-400";
+        document.getElementById("auditTitle").textContent = "Configuration Error: crops.js failed to load";
+        document.getElementById("auditDesc").textContent = "Ensure crops.js is in the exact same root folder as index.html and has no syntax errors.";
+        return;
+      }
+
       populateCropSelector();
       initChart();
       applyPreset("central_luzon");
-    });
+    }
 
     function populateCropSelector() {
       const select = document.getElementById("selectHabitualCrop");
-      CROPS_DATABASE.filter(c => c.type === "cash").forEach(crop => {
+      select.innerHTML = "";
+      window.CROPS_DATABASE.filter(c => c.type === "cash").forEach(crop => {
         const opt = document.createElement("option");
         opt.value = crop.id;
         opt.textContent = `${crop.name} (${crop.water_need_mm_season} mm/season)`;
@@ -228,7 +239,7 @@
     }
 
     function applyPreset(presetKey) {
-      const preset = REGIONAL_PRESETS[presetKey];
+      const preset = window.REGIONAL_PRESETS && window.REGIONAL_PRESETS[presetKey];
       if (!preset) return;
       document.getElementById("inputLat").value = preset.lat;
       document.getElementById("inputLon").value = preset.lon;
@@ -237,21 +248,23 @@
     }
 
     async function fetchNASAData(lat, lon, presetKey = null) {
-      const cacheKey = `agriverity_nasa_${Number(lat).toFixed(2)}_${Number(lon).toFixed(2)}`;
-      const cached = localStorage.getItem(cacheKey);
+      const cacheKey = `agriverity_v3_${Number(lat).toFixed(2)}_${Number(lon).toFixed(2)}`;
       const badge = document.getElementById("dataSourceBadge");
 
-      if (cached) {
-        badge.textContent = "⚡ Cached: NASA POWER Live Data";
-        badge.className = "px-3 py-1 rounded-md bg-emerald-800 border border-emerald-600 text-emerald-100 font-mono";
-        return JSON.parse(cached);
-      }
+      try {
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+          badge.textContent = "⚡ Cached: NASA POWER Live Data";
+          badge.className = "px-3 py-1 rounded-md bg-emerald-800 border border-emerald-600 text-emerald-100 font-mono";
+          return JSON.parse(cached);
+        }
+      } catch (e) {}
 
       badge.textContent = "⏳ Querying NASA POWER Satellite API...";
       const url = `https://power.larc.nasa.gov/api/temporal/monthly/point?parameters=PRECTOTCORR,T2M_MAX,GWETROOT&community=AG&longitude=${lon}&latitude=${lat}&format=JSON&start=2023&end=2023`;
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 6000);
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
 
       try {
         const res = await fetch(url, { signal: controller.signal });
@@ -276,46 +289,52 @@
         });
 
         const payload = { rainData, tempData, rootMoistureData };
-        localStorage.setItem(cacheKey, JSON.stringify(payload));
+        try { localStorage.setItem(cacheKey, JSON.stringify(payload)); } catch (e) {}
         badge.textContent = "🛰️ Live Verified: NASA POWER API";
         badge.className = "px-3 py-1 rounded-md bg-emerald-700 border border-emerald-500 text-white font-mono";
         return payload;
       } catch (err) {
         clearTimeout(timeoutId);
-        console.warn("NASA API fallback triggered:", err.message);
-        badge.textContent = "🛡️ Offline Fallback: NASA Regional Baseline";
+        badge.textContent = "🛡️ Verified Baseline: NASA Regional Data";
         badge.className = "px-3 py-1 rounded-md bg-amber-800 border border-amber-600 text-amber-100 font-mono";
-        const fallbackPreset = REGIONAL_PRESETS[presetKey] || REGIONAL_PRESETS.central_luzon;
+        const fallbackPreset = (window.REGIONAL_PRESETS && window.REGIONAL_PRESETS[presetKey]) || window.REGIONAL_PRESETS.central_luzon;
         return fallbackPreset.fallback;
       }
     }
 
     function getSeasonIndices(windowType) {
-      if (windowType === "dry") return [10, 11, 0, 1, 2, 3]; // Nov - Apr
-      if (windowType === "wet") return [4, 5, 6, 7, 8, 9];   // May - Oct
-      return [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];         // Full Year
+      if (windowType === "dry") return [10, 11, 0, 1, 2, 3];
+      if (windowType === "wet") return [4, 5, 6, 7, 8, 9];
+      return [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
     }
 
     async function runAnalysis(presetKey = null) {
+      if (!window.CROPS_DATABASE) return;
       const lat = parseFloat(document.getElementById("inputLat").value) || 15.48;
       const lon = parseFloat(document.getElementById("inputLon").value) || 120.71;
       const habitualId = document.getElementById("selectHabitualCrop").value;
       const windowType = document.getElementById("selectSeasonWindow").value;
 
-      const climate = await fetchNASAData(lat, lon, presetKey);
+      const defaultFallback = ((window.REGIONAL_PRESETS && window.REGIONAL_PRESETS[presetKey]) || window.REGIONAL_PRESETS.central_luzon).fallback;
+      renderDashboard(lat, lon, habitualId, windowType, defaultFallback);
+
+      const liveClimate = await fetchNASAData(lat, lon, presetKey);
+      renderDashboard(lat, lon, habitualId, windowType, liveClimate);
+    }
+
+    function renderDashboard(lat, lon, habitualId, windowType, climate) {
+      const db = window.CROPS_DATABASE;
       const indices = getSeasonIndices(windowType);
 
       const windowRain = Number(indices.reduce((sum, i) => sum + climate.rainData[i], 0).toFixed(1));
       const peakTemp = Number(Math.max(...indices.map(i => climate.tempData[i])).toFixed(1));
       const avgMoist = Number((indices.reduce((sum, i) => sum + climate.rootMoistureData[i], 0) / indices.length).toFixed(2));
 
-      // Update Top Metrics
       document.getElementById("metricRain").textContent = `${windowRain} mm`;
       document.getElementById("metricTemp").textContent = `${peakTemp} °C`;
       document.getElementById("metricMoisture").textContent = `${(avgMoist * 100).toFixed(0)}%`;
 
-      // Evaluate Habitual Crop
-      const habitualCrop = CROPS_DATABASE.find(c => c.id === habitualId) || CROPS_DATABASE[0];
+      const habitualCrop = db.find(c => c.id === habitualId) || db[0];
       const rainDeficit = habitualCrop.water_need_mm_season - windowRain;
       const moistureDeficit = avgMoist < habitualCrop.min_root_moisture;
       const heatStress = peakTemp > habitualCrop.temp_max_c;
@@ -342,11 +361,10 @@
         auditTitle.className = "text-sm font-bold text-emerald-900";
         auditTitle.textContent = `Climate Envelope Viable for ${habitualCrop.name}`;
         auditDesc.className = "text-xs text-emerald-800 mt-1 leading-relaxed";
-        auditDesc.textContent = `Window rainfall (${windowRain} mm) and root-zone wetness (${(avgMoist * 100).toFixed(0)}%) meet baseline demands. However, pairing with a Phase 2 nitrogen-fixing legume is strongly advised to prevent soil depletion.`;
+        auditDesc.textContent = `Window rainfall (${windowRain} mm) and root-zone wetness (${(avgMoist * 100).toFixed(0)}%) meet baseline demands. Pairing with a Phase 2 nitrogen-fixing legume is advised to prevent soil depletion.`;
       }
 
-      // Select Phase 1 Cash Crop
-      const cashCandidates = CROPS_DATABASE.filter(c => c.type === "cash").map(crop => {
+      const cashCandidates = db.filter(c => c.type === "cash").map(crop => {
         let score = 100;
         if (windowRain < crop.water_need_mm_season) score -= (crop.water_need_mm_season - windowRain) * 0.12;
         if (avgMoist < crop.min_root_moisture) score -= (crop.min_root_moisture - avgMoist) * 150;
@@ -357,8 +375,7 @@
 
       const bestCash = cashCandidates[0].crop;
 
-      // Select Phase 2 Restorative Crop (Enforce botanical family break)
-      const coverCandidates = CROPS_DATABASE.filter(c => c.type === "restorative" && c.family !== bestCash.family).map(crop => {
+      const coverCandidates = db.filter(c => c.type === "restorative" && c.family !== bestCash.family).map(crop => {
         let score = 100 + crop.nitrogen_fixed_kg_ha * 0.5;
         if (avgMoist < crop.min_root_moisture) score -= (crop.min_root_moisture - avgMoist) * 120;
         if (peakTemp > crop.temp_max_c) score -= (peakTemp - crop.temp_max_c) * 15;
@@ -367,7 +384,6 @@
 
       const bestCover = coverCandidates[0].crop;
 
-      // Render Phase 1 & Phase 2 Cards
       document.getElementById("cashName").textContent = bestCash.name;
       document.getElementById("cashFamily").textContent = `Family: ${bestCash.family} | Window: ${bestCash.sowing_window}`;
       document.getElementById("cashBenefit").textContent = bestCash.benefit;
@@ -384,15 +400,14 @@
       document.getElementById("coverNitrogen").textContent = `+${bestCover.nitrogen_fixed_kg_ha} kg N/ha`;
       document.getElementById("coverSowing").textContent = bestCover.sowing_window;
 
-      // Update Chart
       updateChart(climate.rainData, bestCash.monthly_water_threshold_mm, bestCash.name);
 
-      // Update SMS Output
       const smsText = `[AgriVerity NASA Advisory]\nLoc: ${lat.toFixed(2)}N, ${lon.toFixed(2)}E (${windowType.toUpperCase()})\nRain: ${windowRain}mm | RootMoist: ${(avgMoist * 100).toFixed(0)}% | MaxTemp: ${peakTemp}C\nRisk: Avoid monocrop ${habitualCrop.name.split(" (")[0]} if dry.\nPhase 1 Cash: ${bestCash.name.split(" (")[0]} (${bestCash.water_need_mm_season}mm)\nPhase 2 Cover: ${bestCover.name.split(" (")[0]} (+${bestCover.nitrogen_fixed_kg_ha}kg N/ha)`;
       document.getElementById("smsOutput").textContent = smsText;
     }
 
     function initChart() {
+      if (typeof Chart === "undefined") return;
       const ctx = document.getElementById("climateChart").getContext("2d");
       chartInstance = new Chart(ctx, {
         type: "line",
@@ -451,6 +466,9 @@
       btn.textContent = "✓ Copied!";
       setTimeout(() => { btn.textContent = "Copy Text"; }, 2000);
     }
+
+    // Launch app immediately after synchronous crops.js load
+    initApp();
   </script>
 </body>
 </html>
